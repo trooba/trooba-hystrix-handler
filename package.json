@@ -1,0 +1,37 @@
+{
+  "name": "trooba-hystrix-handler",
+  "version": "1.0.0",
+  "description": "The handler provides hystrix functionality to trooba request/response pipeline",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha test --timeout 4s"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trooba/trooba-hystrix-handler.git"
+  },
+  "keywords": [
+    "hystrix",
+    "circuit",
+    "trooba",
+    "pipeline",
+    "http"
+  ],
+  "author": "Dmytro Semenov <dimichsdg@yahoo.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/trooba/trooba-hystrix-handler/issues"
+  },
+  "homepage": "https://github.com/trooba/trooba-hystrix-handler#readme",
+  "dependencies": {
+    "hystrixjs": "^0.1.2"
+  },
+  "devDependencies": {
+    "async": "^2.4.0",
+    "express": "^4.15.2",
+    "hystrixjs": "^0.1.2",
+    "mocha": "^3.3.0",
+    "supertest": "^3.0.0",
+    "trooba": "^2.0.2"
+  }
+}

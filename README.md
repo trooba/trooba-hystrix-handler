@@ -108,4 +108,3 @@ app.use(dashboard({
 
 app.listen(8000); //  http://localhost:8080/hystrix
 ```
-# trooba-hystrix-handler
