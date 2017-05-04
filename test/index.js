@@ -192,6 +192,7 @@ describe(__filename, () => {
         it('wait for metrics publish', next => process.once('trooba:hystrix:data', () => next()));
 
         it('validate closed circuit', () => {
+
             Assert.equal(false, metrics.pop().isCircuitBreakerOpen);
 
             metrics = [];
@@ -201,6 +202,117 @@ describe(__filename, () => {
 
         it('should accumulate above stats', () => {
             Assert.ok(metrics[0].latencyExecute['99.5'] > 100);
+        });
+
+        it('should force open', next => {
+            RATE = 1000; // 100% of failures
+            counter = 0;
+            circuitFactory.getOrCreate({
+                commandKey: 'op1'
+            }).circuitBreakerForceOpened = true;
+
+            pipe.create().request('hello', (err, response) => {
+                if (err) {
+                    Assert.equal('OpenCircuitError', err.message);
+                    next();
+                    return;
+                }
+                next(new Error('Should have failed'));
+            });
+        });
+
+        it('should be back to regular', next => {
+            RATE = 1000; // 100% of failures
+            counter = 0;
+            const cb = circuitFactory.getOrCreate({
+                commandKey: 'op1'
+            });
+            cb.circuitBreakerForceClosed = false;
+            cb.circuitBreakerForceOpened = false;
+
+            pipe.create().request('hello', (err, response) => {
+                if (err) {
+                    next(new Error('Should not have fail'));
+                    return;
+                }
+                next();
+            });
+        });
+
+        it('should force close', next => {
+            RATE = 1000; // 100% of failures
+            counter = 0;
+            const cb = circuitFactory.getOrCreate({
+                commandKey: 'op1'
+            });
+            cb.circuitBreakerForceClosed = true;
+            cb.circuitBreakerForceOpened = false;
+
+            pipe.create().request('hello', (err, response) => {
+                if (err) {
+                    next(new Error('Should not fail'));
+                    return;
+                }
+                next();
+            });
+        });
+
+        it('should be back to regular, success', next => {
+            RATE = 1000; // 100% of failures
+            counter = 0;
+            const cb = circuitFactory.getOrCreate({
+                commandKey: 'op1'
+            });
+            cb.circuitBreakerForceClosed = false;
+            cb.circuitBreakerForceOpened = false;
+
+            pipe.create().request('hello', (err, response) => {
+                if (err) {
+                    next(new Error('Should not fail'));
+                    return;
+                }
+                next();
+            });
+        });
+
+        it('should force close and never open', next => {
+            RATE = 1; // 100% of failures
+            counter = 0;
+            const cb = circuitFactory.getOrCreate({
+                commandKey: 'op1'
+            });
+            cb.circuitBreakerForceClosed = true;
+            cb.circuitBreakerForceOpened = false;
+
+            Async.times(600, (index, next) => {
+                pipe.create().request('hello', (err, response) => {
+                    if (err) {
+                        Assert.equal('Boom', err.message);
+                        next();
+                        return;
+                    }
+                    next(new Error('Should have failed'));
+                });
+            }, next);
+        });
+
+        it('should be back to regular, fail', next => {
+            RATE = 1000; // 100% of failures
+            counter = 0;
+            const cb = circuitFactory.getOrCreate({
+                commandKey: 'op1'
+            });
+            cb.circuitBreakerForceClosed = false;
+            cb.circuitBreakerForceOpened = false;
+
+            pipe.create().request('hello', (err, response) => {
+                if (err) {
+                    Assert.equal('OpenCircuitError', err.message);
+                    next();
+                    return;
+                }
+                next(new Error('Should fail'));
+            });
         });
     });
 

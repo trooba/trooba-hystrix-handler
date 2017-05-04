@@ -61,7 +61,7 @@ process.on('trooba:hystrix:data', data => console.log(data));
 
 #### Standalone
 
-One can use a standard [hystrix dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard) to view metrics exported as an sse stream.
+One can use a standard [hystrix dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard) to view metrics exported as sse stream.
 
 Here's how expose sse stream in your application
 
@@ -103,8 +103,9 @@ const app = express();
 const dashboard = require('hystrix-dashboard');
 
 app.use(dashboard({
-    topic: 'trooba:hystrix:data' // <<< configurable hystrix metrics topic that trooba hystrix handler uses
+    // configurable hystrix metrics topic that trooba hystrix handler uses to publish data
+    topic: 'trooba:hystrix:data'
 }));
 
-app.listen(8000); //  http://localhost:8080/hystrix
+app.listen(8000); //  http://localhost:8080/hystrix.stream
 ```
