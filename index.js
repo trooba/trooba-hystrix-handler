@@ -24,14 +24,14 @@ module.exports = function hystrix(pipe, config) {
             next();
         });
     });
-    
+
     // configure once if it is not already cached
     Object.assign(serviceCommandBuilder.config, config);
     const serviceCommand = serviceCommandBuilder.build();
 
     // trooba pipeline request flow
     pipe.once('request', (request, next) => {
-        // pass pipe reference to the current flow
+        // pass pipe reference to the command run function
         serviceCommand.execute(pipe, next)
         .then(response => pipe.respond(response))
         .catch(err => pipe.throw(err));
