@@ -19,29 +19,28 @@ The component collects services metrics and publishes it to process event stream
 ```js
 const Trooba = require('trooba');
 // config is used to configure transport and hystrix handler
-const config = {
-    hostname: 'localhost',
-    port: 8000
-};
 
 const pipe = Trooba
-// set optional config parameters
+// set config parameters
 .use(require('trooba-hystrix-handler'), {
-    command: 'my-service-command',
-    timeout: 2000,
-    circuitBreakerErrorThresholdPercentage: 50,
-    circuitBreakerForceClosed: false,
-    circuitBreakerForceOpened: false,
-    circuitBreakerRequestVolumeThreshold: 20,
-    circuitBreakerSleepWindowInMilliseconds: 5000,
-    requestVolumeRejectionThreshold: 0,
-    statisticalWindowNumberOfBuckets: 10,
-    statisticalWindowLength: 10000,
-    percentileWindowNumberOfBuckets: 6,
-    percentileWindowLength: 60000
+    command: 'my-service-command', // required
+    timeout: 2000,  // optional
+    circuitBreakerErrorThresholdPercentage: 50, // optional
+    circuitBreakerForceClosed: false, // optional
+    circuitBreakerForceOpened: false, // optional
+    circuitBreakerRequestVolumeThreshold: 20, // optional
+    circuitBreakerSleepWindowInMilliseconds: 5000, // optional
+    requestVolumeRejectionThreshold: 0, // optional
+    statisticalWindowNumberOfBuckets: 10, // optional
+    statisticalWindowLength: 10000, // optional
+    percentileWindowNumberOfBuckets: 6, // optional
+    percentileWindowLength: 60000 // optional
 })
 // add http transport
-.use(require('trooba-http-transport'), config)
+.use(require('trooba-http-transport'), {
+    hostname: 'localhost',
+    port: 8000
+})
 .build();
 
 pipe.create().request({

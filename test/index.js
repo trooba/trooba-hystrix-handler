@@ -23,10 +23,23 @@ describe(__filename, () => {
         commandFactory.resetCache();
     });
 
+    it('should fail without command name', () => {
+        Assert.throws(() => {
+            Trooba.use(handler)
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.respond(request);
+                });
+            })
+            .build()
+            .create()
+            .request();
+        }, /Command name should be provided/);
+    });
+
     it('should run a handler', next => {
         const pipe = Trooba.use(handler, {
-            protocol: 'http:',
-            hostname: 'localhost'
+            command: 'foo'
         })
         .use(pipe => {
             pipe.on('request', request => {
@@ -48,8 +61,7 @@ describe(__filename, () => {
 
     it('should catch error', next => {
         const pipe = Trooba.use(handler, {
-            protocol: 'http:',
-            hostname: 'localhost'
+            command: 'foo'
         })
         .use(pipe => {
             pipe.on('request', request => {

@@ -1,5 +1,7 @@
 'use strict';
 
+const Assert = require('assert');
+
 const commandFactory = require('hystrixjs').commandFactory;
 const circuitFactory = require('hystrixjs').circuitFactory;
 const hystrixStream = require('hystrixjs').hystrixSSEStream;
@@ -12,11 +14,10 @@ hystrixStream.toObservable().subscribe(
 
 module.exports = function hystrix(pipe, config) {
 
+    Assert.ok(config && config.command, 'Command name should be provided');
+
     // configure
-    const protocol = config.protocol || 'https:';
-    const port = protocol === 'http:' ? 80 : 443;
-    const name = config.command || `${protocol}//${config.hostname}:${port}`;
-    const serviceCommandBuilder = commandFactory.getOrCreate(name, config.group)
+    const serviceCommandBuilder = commandFactory.getOrCreate(config.command, config.group)
     .run(function run(pipe, next) {
         return new Promise((resolve, reject) => {
             pipe.once('response', resolve);
