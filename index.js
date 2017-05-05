@@ -14,10 +14,13 @@ hystrixStream.toObservable().subscribe(
 
 module.exports = function hystrix(pipe, config) {
 
-    Assert.ok(config && config.command, 'Command name should be provided');
+    const command = pipe.context.command || config && config.command;
+    const group = pipe.context.commandGroup || config && config.commandGroup;
+
+    Assert.ok(command, 'Command name should be provided');
 
     // configure
-    const serviceCommandBuilder = commandFactory.getOrCreate(config.command, config.group)
+    const serviceCommandBuilder = commandFactory.getOrCreate(command, group)
     .run(function run(pipe, next) {
         return new Promise((resolve, reject) => {
             pipe.once('response', resolve);

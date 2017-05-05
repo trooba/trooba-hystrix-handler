@@ -4,7 +4,8 @@
   "description": "The handler provides hystrix functionality to trooba request/response pipeline",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha test --timeout 4s"
+    "test": "./node_modules/.bin/mocha test --timeout 4s",
+    "test-coverage": "./node_modules/.bin/istanbul cover ./node_modules/mocha/bin/_mocha --  --timeout 4s -R spec"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,7 @@
     "async": "^2.4.0",
     "express": "^4.15.2",
     "hystrixjs": "^0.1.2",
+    "istanbul": "^0.4.5",
     "mocha": "^3.3.0",
     "supertest": "^3.0.0",
     "trooba": "^2.0.2"
