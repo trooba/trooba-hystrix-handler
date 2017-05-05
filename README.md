@@ -34,17 +34,18 @@ const pipe = Trooba
     statisticalWindowNumberOfBuckets: 10, // optional
     statisticalWindowLength: 10000, // optional
     percentileWindowNumberOfBuckets: 6, // optional
-    percentileWindowLength: 60000, // optional
-    fallback: (err, args) => {  // optional
-        return Promise.resolve('fallback');
-    }
+    percentileWindowLength: 60000 // optional
 })
 // add http transport
 .use(require('trooba-http-transport'), {
     hostname: 'localhost',
     port: 8000
 })
-.build();
+.build({
+    fallback: (err, args) => {  // optional
+        return Promise.resolve('fallback');
+    }
+});
 
 pipe.create().request({
     foo: 'bar'

@@ -31,7 +31,17 @@ module.exports = function hystrix(pipe, config) {
     });
 
     // configure once if it is not already cached
-    Object.assign(serviceCommandBuilder.config, config);
+    Object.assign(serviceCommandBuilder.config, config, {
+        fallback: (err, args) => {
+            const pipe = args.shift();
+            // this pipe reference points to underlying request flow context
+            if (pipe.context.fallback) {
+                return pipe.context.fallback(err, pipe);
+            }
+            return Promise.reject(err);
+        }
+    });
+
     const serviceCommand = serviceCommandBuilder.build();
 
     // trooba pipeline request flow

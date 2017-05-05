@@ -63,43 +63,69 @@ describe(__filename, () => {
         });
     });
 
-    it('should catch error and do fallback with resolve', next => {
-        const pipe = Trooba.use(handler, {
-            command: 'foo',
-            fallback: (err, args) => {
-                return Promise.resolve('fallback');
-            }
-        })
-        .use(pipe => {
-            pipe.on('request', request => {
-                pipe.throw(new Error('Boom'));
-            });
-        })
-        .build();
+    describe('fallback', () => {
 
-        pipe.create().request('hello', (err, res) => {
-            Assert.equal('fallback', res);
-            next();
+        it('should catch error and do fallback with resolve', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .build({
+                fallback: (err, args) => {
+                    return Promise.resolve('fallback');
+                }
+            });
+
+            pipe.create().request('hello', (err, res) => {
+                Assert.equal('fallback', res);
+                next();
+            });
         });
-    });
 
-    it('should catch error and do fallback with resolve', next => {
-        const pipe = Trooba.use(handler, {
-            command: 'foo',
-            fallback: (err, args) => {
-                return Promise.reject(new Error('Fallback boom'));
-            }
-        })
-        .use(pipe => {
-            pipe.on('request', request => {
-                pipe.throw(new Error('Boom'));
+        it('should catch error and do fallback with reject', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .build({
+                fallback: (err, args) => {
+                    return Promise.reject(new Error('Fallback boom'));
+                }
             });
-        })
-        .build();
 
-        pipe.create().request('hello', err => {
-            Assert.equal('Fallback boom', err.message);
-            next();
+            pipe.create().request('hello', err => {
+                Assert.equal('Fallback boom', err.message);
+                next();
+            });
+        });
+
+        it('should use fallback from context', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .build();
+
+            pipe.create({
+                fallback: (err, args) => {
+                    return Promise.resolve('ctx_fallback');
+                }
+            }).request('hello', (err, res) => {
+                Assert.equal('ctx_fallback', res);
+                next();
+            });
         });
     });
 
