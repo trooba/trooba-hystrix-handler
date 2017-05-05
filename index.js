@@ -5,6 +5,7 @@ const Assert = require('assert');
 const commandFactory = require('hystrixjs').commandFactory;
 const circuitFactory = require('hystrixjs').circuitFactory;
 const hystrixStream = require('hystrixjs').hystrixSSEStream;
+const metricsFactory = require('hystrixjs').metricsFactory;
 
 hystrixStream.toObservable().subscribe(
     sseData => process.emit('trooba:hystrix:data', sseData),
@@ -43,3 +44,5 @@ module.exports = function hystrix(pipe, config) {
 };
 
 module.exports.circuitFactory = circuitFactory;
+module.exports.metricsFactory = metricsFactory;
+module.exports.commandFactory = commandFactory;
