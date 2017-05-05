@@ -22,21 +22,22 @@ module.exports = function hystrix(pipe, config) {
 
     // configure
     const serviceCommandBuilder = commandFactory.getOrCreate(command, group)
-    .run(function run(pipe, next) {
+    .run(function run(ctx) {
         return new Promise((resolve, reject) => {
-            pipe.once('response', resolve);
-            pipe.once('error', reject);
-            next();
+            ctx.pipe.once('response', resolve);
+            ctx.pipe.once('error', reject);
+            ctx.next();
         });
     });
 
     // configure once if it is not already cached
     Object.assign(serviceCommandBuilder.config, config, {
         fallback: (err, args) => {
-            const pipe = args.shift();
+            const ctx = args.shift();
+            const pipe = ctx.pipe;
             // this pipe reference points to underlying request flow context
             if (pipe.context.fallback) {
-                return pipe.context.fallback(err, pipe);
+                return pipe.context.fallback(err, ctx.request);
             }
             return Promise.reject(err);
         }
@@ -47,7 +48,11 @@ module.exports = function hystrix(pipe, config) {
     // trooba pipeline request flow
     pipe.once('request', (request, next) => {
         // pass pipe reference to the command run function
-        serviceCommand.execute(pipe, next)
+        serviceCommand.execute({
+            request: request,
+            pipe: pipe,
+            next: next
+        })
         .then(response => pipe.respond(response))
         .catch(err => pipe.throw(err));
     });

@@ -42,7 +42,8 @@ const pipe = Trooba
     port: 8000
 })
 .build({
-    fallback: (err, args) => {  // optional
+    fallback: (err, request) => {  // optional
+        console.log(request); // will print {foo:'bar'}
         return Promise.resolve('fallback');
     }
 });

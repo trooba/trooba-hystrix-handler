@@ -75,7 +75,8 @@ describe(__filename, () => {
                 });
             })
             .build({
-                fallback: (err, args) => {
+                fallback: (err, request) => {
+                    Assert.equal('hello', request);
                     return Promise.resolve('fallback');
                 }
             });
@@ -96,7 +97,8 @@ describe(__filename, () => {
                 });
             })
             .build({
-                fallback: (err, args) => {
+                fallback: (err, request) => {
+                    Assert.equal('hello', request);
                     return Promise.reject(new Error('Fallback boom'));
                 }
             });
