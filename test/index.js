@@ -63,6 +63,46 @@ describe(__filename, () => {
         });
     });
 
+    it('should catch error and do fallback with resolve', next => {
+        const pipe = Trooba.use(handler, {
+            command: 'foo',
+            fallback: (err, args) => {
+                return Promise.resolve('fallback');
+            }
+        })
+        .use(pipe => {
+            pipe.on('request', request => {
+                pipe.throw(new Error('Boom'));
+            });
+        })
+        .build();
+
+        pipe.create().request('hello', (err, res) => {
+            Assert.equal('fallback', res);
+            next();
+        });
+    });
+
+    it('should catch error and do fallback with resolve', next => {
+        const pipe = Trooba.use(handler, {
+            command: 'foo',
+            fallback: (err, args) => {
+                return Promise.reject(new Error('Fallback boom'));
+            }
+        })
+        .use(pipe => {
+            pipe.on('request', request => {
+                pipe.throw(new Error('Boom'));
+            });
+        })
+        .build();
+
+        pipe.create().request('hello', err => {
+            Assert.equal('Fallback boom', err.message);
+            next();
+        });
+    });
+
     it('should have metrics published', next => {
         process.once('trooba:hystrix:data', () => {
             Assert.equal(1, metrics.length);
@@ -351,7 +391,6 @@ describe(__filename, () => {
             });
         });
     });
-
 
     describe('circuit, multiple services', () => {
         let RATE = 5;
