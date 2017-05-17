@@ -30,6 +30,8 @@ module.exports = function hystrix(pipe, config) {
         });
     });
 
+    pipe.context.fallback = pipe.context.fallback || config && config.fallback;
+
     // configure once if it is not already cached
     Object.assign(serviceCommandBuilder.config, config, {
         fallback: (err, args) => {

@@ -63,7 +63,64 @@ describe(__filename, () => {
         });
     });
 
+    it('should catch timeout error', next => {
+        const pipe = Trooba.use(handler, {
+            command: 'timeout',
+            timeout: 1
+        })
+        .use(pipe => {
+            pipe.on('request', request => {
+            });
+        })
+        .build();
+
+        pipe.create().request('hello', err => {
+            Assert.ok(err);
+            Assert.equal('CommandTimeOut', err.message);
+            next();
+        });
+    });
+
     describe('fallback', () => {
+        it('should return error when no fallback available', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .build();
+
+            pipe.create().request('hello', err => {
+                Assert.ok(err);
+                Assert.equal('Boom', err.message);
+                next();
+            });
+        });
+
+        it('should catch error and do fallback provided via config', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo',
+                fallback: (err, request) => {
+                    Assert.equal('hello', request);
+                    return Promise.resolve('fallback');
+                }
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .build();
+
+            pipe.create().request('hello', (err, res) => {
+                Assert.ok(!err, err && err.stack);
+                Assert.equal('fallback', res);
+                next();
+            });
+        });
 
         it('should catch error and do fallback with resolve', next => {
             const pipe = Trooba.use(handler, {

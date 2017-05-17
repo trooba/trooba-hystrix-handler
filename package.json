@@ -25,11 +25,13 @@
   },
   "homepage": "https://github.com/trooba/trooba-hystrix-handler#readme",
   "dependencies": {
-    "hystrixjs": "^0.1.2"
+    "hystrixjs": "https://dimichgh@bitbucket.org/dimichgh/hystrixjs.git",
+    "rxjs": "^5.4.0"
   },
   "devDependencies": {
     "async": "^2.4.0",
     "express": "^4.15.2",
+    "hystrix-dashboard": "^0.1.1",
     "hystrixjs": "^0.1.2",
     "istanbul": "^0.4.5",
     "mocha": "^3.3.0",
