@@ -3,6 +3,11 @@ trooba-hystrix-handler
 
 Trooba handler that provides Hystrix functionality to [trooba](https://github.com/trooba/trooba) based service pipelines.
 
+[![codecov](https://codecov.io/gh/trooba/trooba-hystrix-handler/branch/master/graph/badge.svg)](https://codecov.io/gh/trooba/trooba-hystrix-handler)
+[![Build Status](https://travis-ci.org/trooba/trooba-hystrix-handler.svg?branch=master)](https://travis-ci.org/trooba/trooba-hystrix-handler) [![NPM](https://img.shields.io/npm/v/trooba-hystrix-handler.svg)](https://www.npmjs.com/package/trooba-hystrix-handler)
+[![Downloads](https://img.shields.io/npm/dm/trooba-hystrix-handler.svg)](http://npm-stat.com/charts.html?package=trooba-hystrix-handler)
+[![Known Vulnerabilities](https://snyk.io/test/github/trooba/trooba-hystrix-handler/badge.svg)](https://snyk.io/test/github/trooba/trooba-hystrix-handler)
+
 
 ### Install
 
