@@ -72,7 +72,7 @@ process.on('trooba:hystrix:data', data => console.log(data));
 
 One can use a standard [hystrix dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard) to view metrics exported as sse stream.
 
-Here's how expose sse stream in your application:
+Here's how expose sse stream in your application
 
 ```js
 const express = require('express');
