@@ -31,7 +31,7 @@
   "devDependencies": {
     "async": "^2.4.0",
     "express": "^4.15.2",
-    "hystrix-dashboard": "^0.1.1",
+    "hystrix-dashboard": "^1.0.0",
     "istanbul": "^0.4.5",
     "mocha": "^3.3.0",
     "supertest": "^3.0.0",
