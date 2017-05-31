@@ -4,9 +4,12 @@ const Assert = require('assert');
 const Trooba = require('trooba');
 const Async = require('async');
 
-const commandFactory = require('hystrixjs').commandFactory;
-const metricsFactory = require('hystrixjs').metricsFactory;
-const circuitFactory = require('hystrixjs').circuitFactory;
+const Hystrix = require('hystrixjs');
+const commandFactory = Hystrix.commandFactory;
+const metricsFactory = Hystrix.metricsFactory;
+const circuitFactory = Hystrix.circuitFactory;
+
+const HystrixDashboard = require('hystrix-dashboard');
 
 const handler = require('..');
 
@@ -15,6 +18,12 @@ describe(__filename, () => {
 
     before(() => {
         process.on('trooba:hystrix:data', data => metrics.push(JSON.parse(data)));
+
+        HystrixDashboard.Utils.toObservable(Hystrix, 2000).subscribe(
+            sseData => process.emit('trooba:hystrix:data', sseData),
+            err => {},
+            () => {}
+        );
     });
 
     after(() => {
