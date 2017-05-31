@@ -1,6 +1,6 @@
 {
   "name": "trooba-hystrix-handler",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "The handler provides hystrix functionality to trooba request/response pipeline",
   "main": "index.js",
   "scripts": {
