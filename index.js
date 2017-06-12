@@ -15,13 +15,7 @@ module.exports = function hystrix(pipe, config) {
 
     // configure
     const serviceCommandBuilder = commandFactory.getOrCreate(command, group)
-    .run(function run(ctx) {
-        return new Promise((resolve, reject) => {
-            ctx.pipe.once('response', resolve);
-            ctx.pipe.once('error', reject);
-            ctx.next();
-        });
-    });
+    .run(runCommand);
 
     pipe.context.fallback = pipe.context.fallback || config && config.fallback;
 
@@ -52,6 +46,14 @@ module.exports = function hystrix(pipe, config) {
         .catch(err => pipe.throw(err));
     });
 };
+
+function runCommand(ctx) {
+    return new Promise((resolve, reject) => {
+        ctx.pipe.once('response', resolve);
+        ctx.pipe.once('error', reject);
+        ctx.next();
+    });
+}
 
 module.exports.circuitFactory = circuitFactory;
 module.exports.metricsFactory = metricsFactory;
