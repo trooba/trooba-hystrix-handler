@@ -21,15 +21,7 @@ module.exports = function hystrix(pipe, config) {
 
     // configure once if it is not already cached
     Object.assign(serviceCommandBuilder.config, config, {
-        fallback: (err, args) => {
-            const ctx = args.shift();
-            const pipe = ctx.pipe;
-            // this pipe reference points to underlying request flow context
-            if (pipe.context.fallback) {
-                return pipe.context.fallback(err, ctx.request);
-            }
-            return Promise.reject(err);
-        }
+        fallback: defaultFallback
     });
 
     const serviceCommand = serviceCommandBuilder.build();
@@ -46,6 +38,16 @@ module.exports = function hystrix(pipe, config) {
         .catch(err => pipe.throw(err));
     });
 };
+
+function defaultFallback(err, args) {
+    const ctx = args.shift();
+    const pipe = ctx.pipe;
+    // this pipe reference points to underlying request flow context
+    if (pipe.context.fallback) {
+        return pipe.context.fallback(err, ctx.request);
+    }
+    return Promise.reject(err);
+}
 
 function runCommand(ctx) {
     return new Promise((resolve, reject) => {
