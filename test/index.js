@@ -552,7 +552,7 @@ describe(__filename, () => {
             // Assert.equal(false, metrics.pop().isCircuitBreakerOpen);
             Assert.equal(10, metrics.length);
             metrics.forEach(metric => {
-                Assert.ok(metric.errorPercentage < 30 && metric.errorPercentage > 5, `Actual value ${metric.errorPercentage}`);
+                Assert.ok(metric.errorPercentage <= 30 && metric.errorPercentage >= 5, `Actual value ${metric.errorPercentage}`);
                 Assert.equal(100, metric.requestCount, `Actual ${metric}`);
             });
 
