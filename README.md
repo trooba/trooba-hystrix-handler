@@ -1,7 +1,7 @@
 trooba-hystrix-handler
 ======================
 
-Trooba handler that provides Hystrix functionality to [trooba](https://github.com/trooba/trooba) based service pipelines.
+Trooba handler that provides Hystrix functionality to [trooba](https://github.com/trooba/trooba) based service pipelines. For more details on this topic, please read these blog posts [Part 1](https://medium.com/@dimichmm/building-resilient-platform-part-1-51b852588fb3) and [Part 2](https://medium.com/@dimichmm/building-resilient-platform-part-2-509c9550617d).
 
 [![codecov](https://codecov.io/gh/trooba/trooba-hystrix-handler/branch/master/graph/badge.svg)](https://codecov.io/gh/trooba/trooba-hystrix-handler)
 [![Build Status](https://travis-ci.org/trooba/trooba-hystrix-handler.svg?branch=master)](https://travis-ci.org/trooba/trooba-hystrix-handler) [![NPM](https://img.shields.io/npm/v/trooba-hystrix-handler.svg)](https://www.npmjs.com/package/trooba-hystrix-handler)
