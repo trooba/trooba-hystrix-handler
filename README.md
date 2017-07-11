@@ -28,7 +28,6 @@ const Trooba = require('trooba');
 const pipe = Trooba
 // set config parameters
 .use(require('trooba-hystrix-handler'), {
-    command: 'my-service-command', // required
     timeout: 2000,  // optional
     circuitBreakerErrorThresholdPercentage: 50, // optional
     circuitBreakerForceClosed: false, // optional
@@ -54,7 +53,7 @@ const pipe = Trooba
 });
 
 pipe.create().request({
-    foo: 'bar'
+    command: 'my-service-command', // required
 }, (err, response) => console.log(err, response));
 ```
 
