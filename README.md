@@ -52,8 +52,11 @@ const pipe = Trooba
     }
 });
 
-pipe.create().request({
+pipe.create({
     command: 'my-service-command', // required
+})
+.request({
+    foo: 'bar'
 }, (err, response) => console.log(err, response));
 ```
 
