@@ -32,7 +32,7 @@ describe(__filename, () => {
         commandFactory.resetCache();
     });
 
-    it('should run a handler', next => {
+    it('should handle request', next => {
         const pipe = Trooba.use(handler, {
             command: 'foo'
         })
@@ -559,6 +559,54 @@ describe(__filename, () => {
             metrics = [];
         });
 
+    });
+
+    describe('streaming', () => {
+        it('should handle stream data and preserve data order', next => {
+            const pipe = Trooba
+            .use(pipe => {
+                let _response;
+                pipe.on('response', (response, next) => {
+                    _response = response;
+                    Assert.equal('pong', _response);
+                    next();
+                });
+                pipe.on('response:data', (data, next) => {
+                    Assert.equal('pong', _response);
+                    if (data === undefined) {
+                        return next();
+                    }
+                    Assert.ok(data === 'data1' || data === 'data2');
+                    next();
+                });
+            })
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.once('request', request => {
+                    const stream = pipe.streamResponse('pong');
+                    stream.write('data1');
+                    stream.write('data2');
+                    stream.end();
+                });
+            })
+            .build();
+
+            pipe.create().request('ping')
+            .once('error', next)
+            .once('response', response => {
+                Assert.equal('pong', response);
+                next();
+            })
+            .on('response:data', (data, next) => {
+                if (data === undefined) {
+                    return next();
+                }
+                Assert.ok(data === 'data1' || data === 'data2');
+                next();
+            });
+        });
     });
 });
 

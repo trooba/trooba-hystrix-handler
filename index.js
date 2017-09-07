@@ -34,7 +34,15 @@ module.exports = function hystrix(pipe, config) {
             pipe: pipe,
             next: next
         })
-        .then(response => pipe.respond(response))
+        .then(response => {
+            if (typeof response === 'function') {
+                // continue existing response flow with next
+                response(pipe);
+                return;
+            }
+            // in case of fallback, we need to form the response again
+            pipe.respond(response);
+        })
         .catch(err => pipe.throw(err));
     });
 };
@@ -51,7 +59,7 @@ function defaultFallback(err, args) {
 
 function runCommand(ctx) {
     return new Promise((resolve, reject) => {
-        ctx.pipe.once('response', resolve);
+        ctx.pipe.once('response', (response, next) => resolve(() => next()));
         ctx.pipe.once('error', reject);
         ctx.next();
     });
