@@ -11,6 +11,9 @@
     "type": "git",
     "url": "git+https://github.com/trooba/trooba-hystrix-handler.git"
   },
+  "publishConfig": {
+    "registry": "http://registry.npmjs.org"
+  }
   "keywords": [
     "hystrix",
     "circuit",
