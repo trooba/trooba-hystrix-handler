@@ -13,7 +13,7 @@
   },
   "publishConfig": {
     "registry": "http://registry.npmjs.org"
-  }
+  },
   "keywords": [
     "hystrix",
     "circuit",
