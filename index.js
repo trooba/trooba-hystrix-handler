@@ -35,15 +35,13 @@ module.exports = function hystrix(pipe, config) {
             next: next
         })
         .then(response => {
-            if (typeof response === 'function') {
-                // continue existing response flow with next
-                response();
-                return;
-            }
-            // in case of fallback, we need to form the response again
-            pipe.respond(response);
+            // start only fallback response here
+            !response.skip && pipe.respond(response);
         })
-        .catch(err => pipe.throw(err));
+        .catch(err => {
+            // start only open circuit errors here
+            !err.skip && pipe.throw(err);
+        });
     });
 };
 
@@ -59,8 +57,20 @@ function defaultFallback(err, args) {
 
 function runCommand(ctx) {
     return new Promise((resolve, reject) => {
-        ctx.pipe.once('response', (response, next) => resolve(next));
-        ctx.pipe.once('error', reject);
+        ctx.pipe.once('response', (response, next) => {
+            // record hystrix success
+            resolve({
+                skip: true
+            });
+            next();
+        });
+        ctx.pipe.once('error', (err, next) => {
+            // record rejection in hystrix
+            reject({
+                skip: true
+            });
+            next();
+        });
         ctx.next();
     });
 }
