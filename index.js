@@ -27,7 +27,7 @@ module.exports = function hystrix(pipe, config) {
     const serviceCommand = serviceCommandBuilder.build();
 
     // trooba pipeline request flow
-    pipe.once('request', (request, next) => {
+    pipe.on('request', (request, next) => {
         // pass pipe reference to the command run function
         serviceCommand.execute({
             request: request,
@@ -57,6 +57,9 @@ function defaultFallback(err, args) {
 
 function runCommand(ctx) {
     return new Promise((resolve, reject) => {
+        ctx.pipe.removeListener('response');
+        ctx.pipe.removeListener('response:data');
+        ctx.pipe.removeListener('error');
         ctx.pipe.once('response', (response, next) => {
             // record hystrix success
             resolve({
@@ -65,6 +68,7 @@ function runCommand(ctx) {
             // continue pipe flow
             next();
         });
+
         // use it to decide if we can still do fallback when deal with stream data;
         ctx.pipe.once('response:data', (data, next) => {
             ctx.pipe.context.fallback = undefined;
