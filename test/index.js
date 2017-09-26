@@ -763,18 +763,23 @@ describe(__filename, () => {
             .use(pipe => {
                 let count = 0;
                 pipe.on('response:data', (data, next) => {
+                    if (count === 0) {
+                        next();
+                    }
                     if (count++ === 1) {
                         pipe.throw(new Error('Boom'));
                     }
-                    next();
                 });
             })
             .use(pipe => {
                 pipe.on('request', request => {
-                    pipe.streamResponse(request)
-                    .write('data1')
-                    .write('data2')
-                    .end();
+                    const stream = pipe.streamResponse(request)
+                    .write('data1');
+
+                    setImmediate(() => {
+                        stream.write('data1')
+                        .end();
+                    });
                 });
             })
             .build({
@@ -790,6 +795,11 @@ describe(__filename, () => {
             pipe.create().request('hello')
             .on('error', err => {
                 _err = err;
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1'], _data);
+                done();
             })
             .on('response', (response, next) => {
                 _response = response;
@@ -799,13 +809,7 @@ describe(__filename, () => {
                 _data.push(data);
                 next();
             })
-            .on('response:end', () => {
-                Assert.ok(_err);
-                Assert.equal('Boom', _err.message);
-                Assert.equal('hello', _response);
-                Assert.deepEqual(['data1', 'data2', undefined], _data);
-                done();
-            });
+            .on('response:end', () => done(new Error('Should never happen')));
         });
 
         it('should catch error and do a fallback', done => {
