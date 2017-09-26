@@ -62,14 +62,22 @@ function runCommand(ctx) {
             resolve({
                 skip: true
             });
+            // continue pipe flow
+            next();
+        });
+        // use it to decide if we can still do fallback when deal with stream data;
+        ctx.pipe.once('response:data', (data, next) => {
+            ctx.pipe.context.fallback = undefined;
             next();
         });
         ctx.pipe.once('error', (err, next) => {
             // record rejection in hystrix
-            reject({
-                skip: true
-            });
-            next();
+            err.skip = true;
+            reject(err);
+            // continue pipe flow
+            if (!ctx.pipe.context.fallback) {
+                next();
+            }
         });
         ctx.next();
     });

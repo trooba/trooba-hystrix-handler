@@ -606,6 +606,41 @@ describe(__filename, () => {
     });
 
     describe('streaming', () => {
+
+        it('should handle response stream', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build();
+
+            let _response;
+            const _data = [];
+
+            pipe.create().request('hello')
+            .on('error', next)
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => {
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1', 'data2', undefined], _data);
+                next();
+            });
+        });
+
         it('should handle stream data and preserve data order', next => {
             const pipe = Trooba
             .use(pipe => {
@@ -648,40 +683,6 @@ describe(__filename, () => {
                     return next();
                 }
                 Assert.ok(data === 'data1' || data === 'data2');
-                next();
-            });
-        });
-
-        it('should handle response stream', next => {
-            const pipe = Trooba.use(handler, {
-                command: 'foo'
-            })
-            .use(pipe => {
-                pipe.on('request', request => {
-                    pipe.streamResponse(request)
-                    .write('data1')
-                    .write('data2')
-                    .end();
-                });
-            })
-            .build();
-
-            let _response;
-            const _data = [];
-
-            pipe.create().request('hello')
-            .on('error', next)
-            .on('response', (response, next) => {
-                _response = response;
-                next();
-            })
-            .on('response:data', (data, next) => {
-                _data.push(data);
-                next();
-            })
-            .on('response:end', () => {
-                Assert.equal('hello', _response);
-                Assert.deepEqual(['data1', 'data2', undefined], _data);
                 next();
             });
         });
@@ -751,6 +752,102 @@ describe(__filename, () => {
                 Assert.ok(err);
                 Assert.equal('CommandTimeOut', err.message);
                 done();
+            });
+        });
+
+        it('should catch error and ignore it and pass it further as the command has been handled once', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                let count = 0;
+                pipe.on('response:data', (data, next) => {
+                    if (count++ === 1) {
+                        pipe.throw(new Error('Boom'));
+                    }
+                    next();
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build({
+                fallback: (err, request) => {
+                    done(new Error('Should not happen'));
+                }
+            });
+
+            let _response;
+            const _data = [];
+            let _err;
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                _err = err;
+            })
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => {
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1', 'data2', undefined], _data);
+                done();
+            });
+        });
+
+        it('should catch error and do a fallback', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('response', (data, next) => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build({
+                fallback: (err, request) => {
+                    Assert.ok(err);
+                    Assert.equal('Boom', err.message);
+                    return Promise.resolve('fallback');
+                }
+            });
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                done(new Error('Should not happen'));
+            })
+            .on('response', (response, next) => {
+                Assert.equal('fallback', response);
+                done();
+                next();
+            })
+            .on('response:data', (data, next) => {
+                done(new Error('Should not happen'));
+            })
+            .on('response:end', () => {
+                done(new Error('Should not happen'));
             });
         });
 
