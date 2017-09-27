@@ -693,10 +693,10 @@ describe(__filename, () => {
                 command: 'foo'
             })
             .use(pipe => {
-                let count = 0;
                 pipe.on('response:data', (data, next) => {
-                    if (count++ === 1) {
+                    if (data === 'data2') {
                         pipe.throw(new Error('Boom'));
+                        return;
                     }
                     next();
                 });
@@ -718,6 +718,11 @@ describe(__filename, () => {
             pipe.create().request('hello')
             .on('error', err => {
                 _err = err;
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1'], _data);
+                done();
             })
             .on('response', (response, next) => {
                 _response = response;
@@ -727,13 +732,7 @@ describe(__filename, () => {
                 _data.push(data);
                 next();
             })
-            .on('response:end', () => {
-                Assert.ok(_err);
-                Assert.equal('Boom', _err.message);
-                Assert.equal('hello', _response);
-                Assert.deepEqual(['data1', 'data2', undefined], _data);
-                done();
-            });
+            .on('response:end', () => done(new Error('Should never happen')));
         });
 
         it('should catch timeout error', done => {
@@ -755,31 +754,76 @@ describe(__filename, () => {
             });
         });
 
-        it('should catch error and ignore it and pass it further as the command has been handled once', done => {
+        it('should catch error and stop the pipe execution at this point', done => {
             const pipe = Trooba
             .use(handler, {
                 command: 'foo'
             })
             .use(pipe => {
-                let count = 0;
                 pipe.on('response:data', (data, next) => {
-                    if (count === 0) {
-                        next();
+                    if (data === 'data1') {
+                        return next();
                     }
-                    if (count++ === 1) {
+                    if (data === 'data2') {
                         pipe.throw(new Error('Boom'));
                     }
                 });
             })
             .use(pipe => {
                 pipe.on('request', request => {
-                    const stream = pipe.streamResponse(request)
-                    .write('data1');
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build();
 
-                    setImmediate(() => {
-                        stream.write('data1')
-                        .end();
-                    });
+            let _response;
+            const _data = [];
+            let _err;
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                _err = err;
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1'], _data);
+                done();
+            })
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => done(new Error('Should never happen')));
+        });
+
+        it('should catch error and stop the pipe execution at this point and ignore fallback as stream has been flushed already', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('response:data', (data, next) => {
+                    if (data === 'data1') {
+                        return next();
+                    }
+                    if (data === 'data2') {
+                        pipe.throw(new Error('Boom'));
+                    }
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
                 });
             })
             .build({

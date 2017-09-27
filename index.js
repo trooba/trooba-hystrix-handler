@@ -35,8 +35,11 @@ module.exports = function hystrix(pipe, config) {
             next: next
         })
         .then(response => {
+            if (response.next) {
+                return response.next();
+            }
             // start only fallback response here
-            !response.skip && pipe.respond(response);
+            pipe.respond(response);
         })
         .catch(err => {
             // start only open circuit errors here
@@ -63,10 +66,8 @@ function runCommand(ctx) {
         ctx.pipe.once('response', (response, next) => {
             // record hystrix success
             resolve({
-                skip: true
+                next: next
             });
-            // continue pipe flow
-            next();
         });
 
         // use it to decide if we can still do fallback when deal with stream data;
@@ -78,10 +79,15 @@ function runCommand(ctx) {
             // record rejection in hystrix
             err.skip = true;
             reject(err);
-            // continue pipe flow
-            if (!ctx.pipe.context.fallback) {
-                next();
-            }
+            // allow err to get recorded in hystrix so we can react on it in the
+            // handler down the response pipe
+            setImmediate(() => {
+                // if fallback is not specified or deleted after data flush
+                if (!ctx.pipe.context.fallback) {
+                    // continue pipe flow if needed
+                    next();
+                }
+            });
         });
         ctx.next();
     });
