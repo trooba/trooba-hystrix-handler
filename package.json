@@ -38,6 +38,6 @@
     "istanbul": "^0.4.5",
     "mocha": "^3.3.0",
     "supertest": "^3.0.0",
-    "trooba": "^2.1.2"
+    "trooba": "2.1.1"
   }
 }
