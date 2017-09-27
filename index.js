@@ -27,7 +27,7 @@ module.exports = function hystrix(pipe, config) {
     const serviceCommand = serviceCommandBuilder.build();
 
     // trooba pipeline request flow
-    pipe.once('request', (request, next) => {
+    pipe.on('request', (request, next) => {
         // pass pipe reference to the command run function
         serviceCommand.execute({
             request: request,
@@ -35,15 +35,16 @@ module.exports = function hystrix(pipe, config) {
             next: next
         })
         .then(response => {
-            if (typeof response === 'function') {
-                // continue existing response flow with next
-                response();
-                return;
+            if (response.next) {
+                return response.next();
             }
-            // in case of fallback, we need to form the response again
+            // start only fallback response here
             pipe.respond(response);
         })
-        .catch(err => pipe.throw(err));
+        .catch(err => {
+            // start only open circuit errors here
+            !err.skip && pipe.throw(err);
+        });
     });
 };
 
@@ -59,8 +60,35 @@ function defaultFallback(err, args) {
 
 function runCommand(ctx) {
     return new Promise((resolve, reject) => {
-        ctx.pipe.once('response', (response, next) => resolve(next));
-        ctx.pipe.once('error', reject);
+        ctx.pipe.removeListener('response');
+        ctx.pipe.removeListener('response:data');
+        ctx.pipe.removeListener('error');
+        ctx.pipe.once('response', (response, next) => {
+            // record hystrix success
+            resolve({
+                next: next
+            });
+        });
+
+        // use it to decide if we can still do fallback when deal with stream data;
+        ctx.pipe.once('response:data', (data, next) => {
+            ctx.pipe.context.fallback = undefined;
+            next();
+        });
+        ctx.pipe.once('error', (err, next) => {
+            // record rejection in hystrix
+            err.skip = true;
+            reject(err);
+            // allow err to get recorded in hystrix so we can react on it in the
+            // handler down the response pipe
+            setImmediate(() => {
+                // if fallback is not specified or deleted after data flush
+                if (!ctx.pipe.context.fallback) {
+                    // continue pipe flow if needed
+                    next();
+                }
+            });
+        });
         ctx.next();
     });
 }

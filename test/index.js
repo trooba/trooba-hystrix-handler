@@ -90,6 +90,50 @@ describe(__filename, () => {
         });
     });
 
+    describe('retry', () => {
+        it('should handle retry logic', next => {
+            var requestCounter = 0;
+
+            const pipe = Trooba
+            .use(pipe => {
+                var count = 0;
+                var _request;
+                pipe.on('request', (request, next) => {
+                    _request = request;
+                    next();
+                });
+                pipe.on('response', (response, next) => {
+                    if (count++ < 1) {
+                        pipe.request(_request);
+                        return;
+                    }
+                    next();
+                });
+            })
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    requestCounter++;
+                    pipe.respond(request);
+                });
+            })
+            .build();
+
+            pipe.create().request('hello', (err, response) => {
+                if (err) {
+                    next(err);
+                    return;
+                }
+                Assert.ok(!err, err && err.stack);
+                Assert.equal('hello', response);
+                Assert.equal(2, requestCounter);
+                next();
+            });
+        });
+    });
+
     describe('fallback', () => {
         it('should return error when no fallback available', next => {
             const pipe = Trooba.use(handler, {
@@ -552,7 +596,7 @@ describe(__filename, () => {
             // Assert.equal(false, metrics.pop().isCircuitBreakerOpen);
             Assert.equal(10, metrics.length);
             metrics.forEach(metric => {
-                Assert.ok(metric.errorPercentage <= 30 && metric.errorPercentage >= 5, `Actual value ${metric.errorPercentage}`);
+                Assert.ok(metric.errorPercentage <= 35 && metric.errorPercentage >= 5, `Actual value ${metric.errorPercentage}`);
                 Assert.equal(100, metric.requestCount, `Actual ${metric}`);
             });
 
@@ -562,6 +606,41 @@ describe(__filename, () => {
     });
 
     describe('streaming', () => {
+
+        it('should handle response stream', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build();
+
+            let _response;
+            const _data = [];
+
+            pipe.create().request('hello')
+            .on('error', next)
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => {
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1', 'data2', undefined], _data);
+                next();
+            });
+        });
+
         it('should handle stream data and preserve data order', next => {
             const pipe = Trooba
             .use(pipe => {
@@ -604,6 +683,256 @@ describe(__filename, () => {
                     return next();
                 }
                 Assert.ok(data === 'data1' || data === 'data2');
+                next();
+            });
+        });
+
+        it('should catch error', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('response:data', (data, next) => {
+                    if (data === 'data2') {
+                        pipe.throw(new Error('Boom'));
+                        return;
+                    }
+                    next();
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build();
+
+            let _response;
+            const _data = [];
+            let _err;
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                _err = err;
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1'], _data);
+                done();
+            })
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => done(new Error('Should never happen')));
+        });
+
+        it('should catch timeout error', done => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo1',
+                timeout: 1
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                });
+            })
+            .build();
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                Assert.ok(err);
+                Assert.equal('CommandTimeOut', err.message);
+                done();
+            });
+        });
+
+        it('should catch error and stop the pipe execution at this point', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('response:data', (data, next) => {
+                    if (data === 'data1') {
+                        return next();
+                    }
+                    if (data === 'data2') {
+                        pipe.throw(new Error('Boom'));
+                    }
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build();
+
+            let _response;
+            const _data = [];
+            let _err;
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                _err = err;
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1'], _data);
+                done();
+            })
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => done(new Error('Should never happen')));
+        });
+
+        it('should catch error and stop the pipe execution at this point and ignore fallback as stream has been flushed already', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('response:data', (data, next) => {
+                    if (data === 'data1') {
+                        return next();
+                    }
+                    if (data === 'data2') {
+                        pipe.throw(new Error('Boom'));
+                    }
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build({
+                fallback: (err, request) => {
+                    done(new Error('Should not happen'));
+                }
+            });
+
+            let _response;
+            const _data = [];
+            let _err;
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                _err = err;
+                Assert.ok(_err);
+                Assert.equal('Boom', _err.message);
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1'], _data);
+                done();
+            })
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => done(new Error('Should never happen')));
+        });
+
+        it('should catch error and do a fallback', done => {
+            const pipe = Trooba
+            .use(handler, {
+                command: 'foo'
+            })
+            .use(pipe => {
+                pipe.on('response', (data, next) => {
+                    pipe.throw(new Error('Boom'));
+                });
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    pipe.streamResponse(request)
+                    .write('data1')
+                    .write('data2')
+                    .end();
+                });
+            })
+            .build({
+                fallback: (err, request) => {
+                    Assert.ok(err);
+                    Assert.equal('Boom', err.message);
+                    return Promise.resolve('fallback');
+                }
+            });
+
+            pipe.create().request('hello')
+            .on('error', err => {
+                done(new Error('Should not happen'));
+            })
+            .on('response', (response, next) => {
+                Assert.equal('fallback', response);
+                done();
+                next();
+            })
+            .on('response:data', (data, next) => {
+                done(new Error('Should not happen'));
+            })
+            .on('response:end', () => {
+                done(new Error('Should not happen'));
+            });
+        });
+
+        it('should handle request stream', next => {
+            const pipe = Trooba.use(handler, {
+                command: 'foo2'
+            })
+            .use(pipe => {
+                pipe.on('request', request => {
+                    setImmediate(() => {
+                        pipe.streamResponse(request)
+                        .write('data1')
+                        .write('data2')
+                        .end();
+                    });
+                });
+            })
+            .build();
+
+            let _response;
+            const _data = [];
+
+            pipe.create().streamRequest('hello')
+            .write('data1')
+            .end()
+            .on('error', next)
+            .on('response', (response, next) => {
+                _response = response;
+                next();
+            })
+            .on('response:data', (data, next) => {
+                _data.push(data);
+                next();
+            })
+            .on('response:end', () => {
+                Assert.equal('hello', _response);
+                Assert.deepEqual(['data1', 'data2', undefined], _data);
                 next();
             });
         });
