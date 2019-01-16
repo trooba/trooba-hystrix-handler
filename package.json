@@ -37,7 +37,7 @@
     "hystrix-dashboard": "^1.0.0",
     "istanbul": "^0.4.5",
     "mocha": "^3.3.0",
-    "supertest": "^3.0.0",
+    "supertest": "^3.4.1",
     "trooba": "^2.1.2"
   }
 }
