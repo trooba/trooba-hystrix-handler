@@ -36,7 +36,7 @@
     "express": "^4.15.2",
     "hystrix-dashboard": "^1.0.0",
     "istanbul": "^0.4.5",
-    "mocha": "^3.3.0",
+    "mocha": "^6.0.1",
     "supertest": "^3.0.0",
     "trooba": "^2.1.2"
   }
